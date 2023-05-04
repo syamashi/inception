@@ -1,0 +1,73 @@
+version: '3'
+
+services:
+  nginx:
+    image: nginx:syamashi
+    build:
+      context: ./requirements/nginx # Dockerfileのあるディレクトリ
+    container_name: nginx
+    depends_on:
+      - wordpress
+    volumes:
+      - web:/var/www/html
+    networks:
+      - inception-network
+    ports:
+      - "443:443"
+    restart: always
+    env_file:
+      - .env
+  wordpress:
+    image: wordpress:syamashi
+    build:
+      context: ./requirements/wordpress
+    container_name: wordpress
+    depends_on:
+      - mariadb
+    volumes:
+      - web:/var/www/html
+    networks:
+      - inception-network
+    env_file:
+      - .env
+  mariadb:
+    image: mariadb:syamashi
+    build:
+      context: ./requirements/mariadb
+    container_name: mariadb
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - inception-network
+    restart: always
+    env_file: # environmentかどちらかは必須
+      - .env
+  adminer:
+    image: adminer:syamashi
+    build:
+      context: ./requirements/bonus/adminer
+    container_name: adminer
+    restart: always
+    depends_on:
+      - mariadb
+      - wordpress
+    ports:
+      - "8080:8080"
+    networks:
+      - inception-network
+
+networks:
+  inception-network:
+
+
+volumes:
+  db:
+    driver_opts:
+      type: local
+      device: ${VOLUME_DB}
+      o: bind
+  web:
+    driver_opts:
+      type: local
+      device: ${VOLUME_WEB}
+      o: bind
